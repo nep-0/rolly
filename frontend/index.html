@@ -3,76 +3,307 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Rolly</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <h1>Rolly</h1>
-      <p>Film stock, frame ranges, scanner uploads, and export.</p>
-    </div>
-    <button id="refreshBtn">Refresh</button>
-  </header>
+  <div class="app-shell">
+    <nav class="tabs" aria-label="Modules">
+      <button type="button" class="tab-btn active" data-tab="models">Film models</button>
+      <button type="button" class="tab-btn" data-tab="cameras">Cameras</button>
+      <button type="button" class="tab-btn" data-tab="stocks">Stocks</button>
+    </nav>
 
-  <main class="grid">
-    <section>
-      <h2>Film Models</h2>
-      <form id="filmModelForm" class="form">
-        <input name="id" placeholder="ID">
-        <input name="name" placeholder="Name" required>
-        <input name="iso" type="number" placeholder="ISO" required>
-        <input name="size" placeholder="Size" value="135">
-        <input name="nominal_photo_count" type="number" placeholder="Frames">
-        <input name="supported_processing" placeholder="Processing CSV">
-        <button type="submit">Save</button>
-      </form>
-      <div id="filmModels"></div>
-    </section>
+    <main class="workspace">
+      <section class="panel" data-panel="models">
+        <div class="panel-grid">
+          <article class="surface">
+            <div class="surface-head">
+              <div>
+                <h2>Film models</h2>
+                <p class="muted">Create and edit film stock definitions.</p>
+              </div>
+              <button id="newModelBtn" type="button">New</button>
+            </div>
+            <div id="filmModels" class="stack"></div>
+          </article>
 
-    <section>
-      <h2>Cameras</h2>
-      <form id="cameraForm" class="form">
-        <input name="id" placeholder="ID">
-        <input name="name" placeholder="Name" required>
-        <input name="maker" placeholder="Maker" required>
-        <input name="model" placeholder="Model" required>
-        <input name="serial_number" placeholder="Serial number" required>
-        <input name="metering_mode" placeholder="Metering mode">
-        <input name="focal_length" type="number" step="0.1" placeholder="Focal length">
-        <input name="focal_length_35mm" type="number" step="0.1" placeholder="35mm eq">
-        <button type="submit">Save</button>
-      </form>
-      <div id="cameras"></div>
-    </section>
+          <article class="surface form-surface">
+            <div class="surface-head">
+              <div>
+                <h2 id="modelFormTitle">Create film model</h2>
+                <p class="muted">ID is optional. Leave it blank to auto-generate one.</p>
+              </div>
+              <span class="badge" id="modelFormMode">New</span>
+            </div>
+            <form id="filmModelForm" class="form modern-form">
+              <div class="form-section">
+                <div class="section-label">Identity</div>
+                <label class="field">
+                  <span>Name</span>
+                  <input name="name" placeholder="Kodak Portra 400" required>
+                </label>
+                <label class="field">
+                  <span>ID</span>
+                  <input name="id" placeholder="Auto-generated if blank">
+                </label>
+              </div>
+              <div class="form-section">
+                <div class="section-label">Film specs</div>
+                <div class="inline-fields">
+                  <label class="field">
+                    <span>ISO</span>
+                    <input name="iso" type="number" placeholder="400" required>
+                  </label>
+                  <label class="field">
+                    <span>Size</span>
+                    <input name="size" placeholder="135" value="135">
+                  </label>
+                </div>
+                <label class="field">
+                  <span>Frames</span>
+                  <input name="nominal_photo_count" type="number" placeholder="36">
+                </label>
+                <label class="field">
+                  <span>Processing</span>
+                  <input name="supported_processing" placeholder="C-41, E-6">
+                </label>
+              </div>
+              <button type="submit">Save model</button>
+            </form>
+          </article>
+        </div>
+      </section>
 
-    <section>
-      <h2>Stocks</h2>
-      <form id="stockForm" class="form">
-        <input name="id" placeholder="ID">
-        <input name="model_id" placeholder="Model ID" required>
-        <input name="camera_id" placeholder="Camera ID" required>
-        <input name="expiry_year" type="number" placeholder="Expiry year" required>
-        <input name="expiry_month" type="number" placeholder="Expiry month" required>
-        <input name="emulsion_number" placeholder="Emulsion number" required>
-        <input name="chosen_processing" placeholder="Chosen processing" required>
-        <input name="scanner_model" placeholder="Scanner model" required>
-        <input name="comment" placeholder="Comment">
-        <button type="submit">Save</button>
-      </form>
-      <div id="stocks"></div>
-    </section>
+      <section class="panel hidden" data-panel="cameras">
+        <div class="panel-grid">
+          <article class="surface">
+            <div class="surface-head">
+              <div>
+                <h2>Cameras</h2>
+                <p class="muted">Manage camera records and lens data.</p>
+              </div>
+              <button id="newCameraBtn" type="button">New</button>
+            </div>
+            <div id="cameras" class="stack"></div>
+          </article>
 
-    <section>
-      <h2>Stock Detail</h2>
-      <form id="stockPickForm" class="form compact">
-        <input name="stock_id" placeholder="Stock ID" required>
-        <button type="submit">Load</button>
-      </form>
-      <div id="stockDetail"></div>
-    </section>
-  </main>
+          <article class="surface form-surface">
+            <div class="surface-head">
+              <div>
+                <h2 id="cameraFormTitle">Create camera</h2>
+                <p class="muted">Keep camera and lens metadata together.</p>
+              </div>
+              <span class="badge" id="cameraFormMode">New</span>
+            </div>
+            <form id="cameraForm" class="form modern-form">
+              <div class="form-section">
+                <div class="section-label">Identity</div>
+                <label class="field">
+                  <span>Name</span>
+                  <input name="name" placeholder="Konica C35 EF3" required>
+                </label>
+                <label class="field">
+                  <span>ID</span>
+                  <input name="id" placeholder="Auto-generated if blank">
+                </label>
+              </div>
+              <div class="form-section">
+                <div class="section-label">Camera body</div>
+                <label class="field">
+                  <span>Maker</span>
+                  <input name="maker" placeholder="Konica" required>
+                </label>
+                <label class="field">
+                  <span>Model</span>
+                  <input name="model" placeholder="C35 EF3" required>
+                </label>
+                <label class="field">
+                  <span>Serial number</span>
+                  <input name="serial_number" placeholder="3076451" required>
+                </label>
+                <label class="field">
+                  <span>Metering mode</span>
+                  <input name="metering_mode" placeholder="Spot metering">
+                </label>
+              </div>
+              <div class="form-section">
+                <div class="section-label">Lens</div>
+                <div class="inline-fields">
+                  <label class="field">
+                    <span>Focal length</span>
+                    <input name="focal_length" type="number" step="0.1" placeholder="35">
+                  </label>
+                  <label class="field">
+                    <span>35mm equivalent</span>
+                    <input name="focal_length_35mm" type="number" step="0.1" placeholder="35">
+                  </label>
+                </div>
+              </div>
+              <button type="submit">Save camera</button>
+            </form>
+          </article>
+        </div>
+      </section>
 
+      <section class="panel hidden" data-panel="stocks">
+        <div class="panel-grid stocks-grid">
+          <article class="surface list-surface">
+            <div class="surface-head">
+              <div>
+                <h2>Stocks</h2>
+                <p class="muted">Select a stock to inspect ranges, images, and exports.</p>
+              </div>
+              <button id="newStockBtn" type="button">New</button>
+            </div>
+            <div id="stocks" class="stack"></div>
+          </article>
+
+          <div class="editor-stack">
+            <article class="surface form-surface">
+              <div class="surface-head">
+                <div>
+                  <h2 id="stockFormTitle">Create stock</h2>
+                  <p class="muted">Pick model and camera, then record roll-specific data.</p>
+                </div>
+                <span class="badge" id="stockFormMode">New</span>
+              </div>
+              <form id="stockForm" class="form modern-form">
+                <div class="form-section">
+                  <div class="section-label">Identity</div>
+                  <label class="field">
+                    <span>ID</span>
+                    <input name="id" placeholder="Auto-generated if blank">
+                  </label>
+                  <label class="field">
+                    <span>Film model</span>
+                    <select id="stockModelSelect" name="model_id"></select>
+                  </label>
+                  <label class="field">
+                    <span>Camera</span>
+                    <select id="stockCameraSelect" name="camera_id"></select>
+                  </label>
+                </div>
+                <div class="form-section">
+                  <div class="section-label">Roll details</div>
+                  <div class="inline-fields">
+                    <label class="field">
+                      <span>Expiry year</span>
+                      <input name="expiry_year" type="number" placeholder="2027" required>
+                    </label>
+                    <label class="field">
+                      <span>Expiry month</span>
+                      <input name="expiry_month" type="number" placeholder="6" required>
+                    </label>
+                  </div>
+                  <label class="field">
+                    <span>Emulsion number</span>
+                    <input name="emulsion_number" placeholder="A1234" required>
+                  </label>
+                  <label class="field">
+                    <span>Chosen processing</span>
+                    <input name="chosen_processing" placeholder="C-41" required>
+                  </label>
+                  <label class="field">
+                    <span>Scanner model</span>
+                    <input name="scanner_model" placeholder="Epson V600" required>
+                  </label>
+                  <label class="field">
+                    <span>Comment</span>
+                    <input name="comment" placeholder="Optional stock note">
+                  </label>
+                </div>
+                <button type="submit">Save stock</button>
+              </form>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="stockModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="manageStockTitle">
+    <div class="modal-backdrop" data-close-stock-modal></div>
+    <article class="modal-window manage-window">
+      <div class="surface-head">
+        <div>
+          <h2 id="manageStockTitle">Manage stock</h2>
+          <p class="muted">Ranges, uploads, ordering, assignment, and export live here.</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" data-close-stock-modal>Close</button>
+        </div>
+      </div>
+      <div class="manage-layout">
+        <article class="surface form-surface embedded-surface">
+          <div class="surface-head">
+            <div>
+              <h2 id="rangeFormTitle">Create range</h2>
+              <p class="muted">Record a shooting block with time, place, and notes.</p>
+            </div>
+            <div class="modal-actions">
+              <span class="badge" id="rangeFormMode">New</span>
+              <button id="newRangeBtn" type="button" class="secondary">New range</button>
+            </div>
+          </div>
+          <form id="rangeForm" class="form modern-form modal-form">
+            <div class="form-section">
+              <div class="section-label">Frames</div>
+              <label class="field">
+                <span>Stock</span>
+                <select id="rangeStockSelect" name="stock_id"></select>
+              </label>
+              <label class="field">
+                <span>ID</span>
+                <input name="id" placeholder="Auto-generated if blank">
+              </label>
+              <div class="inline-fields">
+                <label class="field">
+                  <span>Start frame</span>
+                  <input name="start_frame" type="number" placeholder="0" required>
+                </label>
+                <label class="field">
+                  <span>End frame</span>
+                  <input name="end_frame" type="number" placeholder="18" required>
+                </label>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="section-label">Time and place</div>
+              <label class="field">
+                <span>Shot from</span>
+                <input name="shot_from" type="datetime-local" step="1">
+              </label>
+              <label class="field">
+                <span>Shot to</span>
+                <input name="shot_to" type="datetime-local" step="1">
+              </label>
+              <label class="field">
+                <span>Location</span>
+                <input name="location" placeholder="Park">
+              </label>
+              <label class="field">
+                <span>Weather</span>
+                <input name="weather" placeholder="Cloudy">
+              </label>
+              <label class="field">
+                <span>Notes</span>
+                <input name="notes" placeholder="Walk in the park">
+              </label>
+            </div>
+            <button type="submit">Save range</button>
+          </form>
+        </article>
+
+        <article class="surface detail-surface embedded-surface" id="stockDetailPane">
+          <div class="empty">Pick a stock to see its images and ranges.</div>
+        </article>
+      </div>
+    </article>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
   <script src="/app.js"></script>
 </body>
 </html>

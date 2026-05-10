@@ -53,6 +53,10 @@ Rolly writes EXIF from scratch on export.
 
 The `frontend/` folder is served directly by the Go server. It is a lightweight test UI, not a separate build.
 
+## Electron desktop wrapper
+
+The `desktop/` folder contains an Electron shell that launches the Go backend as a child process and opens the local web UI.
+
 ## API docs
 
 See [docs/api.md](docs/api.md).

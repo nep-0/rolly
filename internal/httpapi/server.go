@@ -1,8 +1,12 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +15,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	webp "github.com/skrashevich/go-webp"
+	"golang.org/x/image/draw"
+	"golang.org/x/image/tiff"
 
 	"rolly/internal/exporter"
 	"rolly/internal/model"
@@ -226,6 +233,19 @@ func (s *Server) handleStockTree(w http.ResponseWriter, r *http.Request) {
 				"ranges": ranges,
 				"images": images,
 			})
+		case http.MethodPut, http.MethodPatch:
+			var in model.FilmStock
+			if err := decodeJSON(r.Body, &in); err != nil {
+				writeErr(w, err)
+				return
+			}
+			in.ID = stockID
+			out, err := s.store.UpdateStock(in)
+			if err != nil {
+				writeErr(w, err)
+				return
+			}
+			writeJSON(w, http.StatusOK, out)
 		case http.MethodDelete:
 			if err := s.store.DeleteStock(stockID); err != nil {
 				writeErr(w, err)
@@ -447,6 +467,20 @@ func (s *Server) handleImageTree(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[0]
 	switch parts[1] {
+	case "content":
+		if r.Method != http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		img, err := s.store.GetImage(id)
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		if err := writeWebPPreview(w, img.StoredPath); err != nil {
+			writeErr(w, err)
+			return
+		}
 	case "range":
 		if r.Method != http.MethodPatch {
 			http.NotFound(w, r)
@@ -467,6 +501,54 @@ func (s *Server) handleImageTree(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func writeWebPPreview(w http.ResponseWriter, filePath string) error {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	src, _, err := image.Decode(f)
+	if err != nil {
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return seekErr
+		}
+		src, err = tiff.Decode(f)
+		if err != nil {
+			return err
+		}
+	}
+	thumb := resizeForPreview(src, 420)
+	var buf bytes.Buffer
+	if err := webp.Encode(&buf, thumb, &webp.Options{Lossy: true, Quality: 72}); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "image/webp")
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	_, err = w.Write(buf.Bytes())
+	return err
+}
+
+func resizeForPreview(src image.Image, maxSide int) image.Image {
+	b := src.Bounds()
+	width := b.Dx()
+	height := b.Dy()
+	if width <= 0 || height <= 0 {
+		return src
+	}
+	if width <= maxSide && height <= maxSide {
+		return src
+	}
+	dstW, dstH := maxSide, maxSide
+	if width >= height {
+		dstH = maxSide * height / width
+	} else {
+		dstW = maxSide * width / height
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, b, draw.Over, nil)
+	return dst
 }
 
 func decodeJSON(r io.Reader, dst any) error {

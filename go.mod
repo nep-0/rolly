@@ -1,12 +1,13 @@
 module rolly
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20221012074422-4f3f7e934102
 	github.com/dsoprea/go-tiff-image-structure/v2 v2.0.0-20221003165014-8ecc4f52edca
 	github.com/google/uuid v1.6.0
+	github.com/skrashevich/go-webp v0.1.0
 	golang.org/x/image v0.40.0
 	modernc.org/sqlite v1.50.0
 )
