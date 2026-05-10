@@ -1,0 +1,7 @@
+exports
+uploads
+
+.gocache
+
+*.exe
+*.db

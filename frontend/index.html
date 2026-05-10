@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rolly</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Rolly</h1>
+      <p>Film stock, frame ranges, scanner uploads, and export.</p>
+    </div>
+    <button id="refreshBtn">Refresh</button>
+  </header>
+
+  <main class="grid">
+    <section>
+      <h2>Film Models</h2>
+      <form id="filmModelForm" class="form">
+        <input name="id" placeholder="ID">
+        <input name="name" placeholder="Name" required>
+        <input name="iso" type="number" placeholder="ISO" required>
+        <input name="size" placeholder="Size" value="135">
+        <input name="nominal_photo_count" type="number" placeholder="Frames">
+        <input name="supported_processing" placeholder="Processing CSV">
+        <button type="submit">Save</button>
+      </form>
+      <div id="filmModels"></div>
+    </section>
+
+    <section>
+      <h2>Cameras</h2>
+      <form id="cameraForm" class="form">
+        <input name="id" placeholder="ID">
+        <input name="name" placeholder="Name" required>
+        <input name="maker" placeholder="Maker" required>
+        <input name="model" placeholder="Model" required>
+        <input name="serial_number" placeholder="Serial number" required>
+        <input name="metering_mode" placeholder="Metering mode">
+        <input name="focal_length" type="number" step="0.1" placeholder="Focal length">
+        <input name="focal_length_35mm" type="number" step="0.1" placeholder="35mm eq">
+        <button type="submit">Save</button>
+      </form>
+      <div id="cameras"></div>
+    </section>
+
+    <section>
+      <h2>Stocks</h2>
+      <form id="stockForm" class="form">
+        <input name="id" placeholder="ID">
+        <input name="model_id" placeholder="Model ID" required>
+        <input name="camera_id" placeholder="Camera ID" required>
+        <input name="expiry_year" type="number" placeholder="Expiry year" required>
+        <input name="expiry_month" type="number" placeholder="Expiry month" required>
+        <input name="emulsion_number" placeholder="Emulsion number" required>
+        <input name="chosen_processing" placeholder="Chosen processing" required>
+        <input name="scanner_model" placeholder="Scanner model" required>
+        <input name="comment" placeholder="Comment">
+        <button type="submit">Save</button>
+      </form>
+      <div id="stocks"></div>
+    </section>
+
+    <section>
+      <h2>Stock Detail</h2>
+      <form id="stockPickForm" class="form compact">
+        <input name="stock_id" placeholder="Stock ID" required>
+        <button type="submit">Load</button>
+      </form>
+      <div id="stockDetail"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
