@@ -461,11 +461,23 @@ func (s *Server) handleStockExport(stockID string, w http.ResponseWriter, r *htt
 
 func (s *Server) handleImageTree(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/images/"), "/")
-	if len(parts) < 2 {
+	if len(parts) == 0 || parts[0] == "" {
 		http.NotFound(w, r)
 		return
 	}
 	id := parts[0]
+	if len(parts) == 1 {
+		if r.Method != http.MethodDelete {
+			http.NotFound(w, r)
+			return
+		}
+		if err := s.store.DeleteImage(id); err != nil {
+			writeErr(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	switch parts[1] {
 	case "content":
 		if r.Method != http.MethodGet {

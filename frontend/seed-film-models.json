@@ -1,0 +1,90 @@
+[
+  {
+    "id": "lc200",
+    "name": "Lucky C200",
+    "iso": 200,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "kp400",
+    "name": "Kodak Portra 400",
+    "iso": 400,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "kg200",
+    "name": "Kodak Gold 200",
+    "iso": 200,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "ke100",
+    "name": "Kodak Ektar 100",
+    "iso": 100,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "fs400",
+    "name": "Fujifilm Superia X-TRA 400",
+    "iso": 400,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "fc200",
+    "name": "Fujifilm Fujicolor C200",
+    "iso": 200,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["C-41"]
+  },
+  {
+    "id": "ihp5",
+    "name": "Ilford HP5 Plus",
+    "iso": 400,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["B&W", "HC-110", "D-76"]
+  },
+  {
+    "id": "ifp4",
+    "name": "Ilford FP4 Plus",
+    "iso": 125,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["B&W", "D-76"]
+  },
+  {
+    "id": "ktrx400",
+    "name": "Kodak Tri-X 400",
+    "iso": 400,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["B&W", "D-76"]
+  },
+  {
+    "id": "ke100e",
+    "name": "Kodak Ektachrome E100",
+    "iso": 100,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["E-6"]
+  },
+  {
+    "id": "vf50",
+    "name": "Fujichrome Velvia 50",
+    "iso": 50,
+    "size": "135",
+    "nominal_photo_count": 36,
+    "supported_processing": ["E-6"]
+  }
+]

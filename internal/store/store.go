@@ -505,6 +505,19 @@ func (s *Store) GetImage(id string) (model.Image, error) {
 	return img, nil
 }
 
+func (s *Store) DeleteImage(id string) error {
+	row := s.db.QueryRow(`SELECT stored_path FROM images WHERE id=?`, id)
+	var storedPath string
+	if err := row.Scan(&storedPath); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`DELETE FROM images WHERE id=?`, id); err != nil {
+		return err
+	}
+	_ = os.Remove(storedPath)
+	return nil
+}
+
 func (s *Store) ReorderImages(stockID string, ids []string) error {
 	tx, err := s.db.Begin()
 	if err != nil {

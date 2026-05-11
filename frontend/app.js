@@ -19,6 +19,7 @@ const state = {
   models: [],
   cameras: [],
   stocks: [],
+  seedFilmModels: [],
   activeTab: "models",
   activeStockId: "",
   activeImageRangeId: "",
@@ -42,6 +43,10 @@ function toast(message, kind = "success") {
   node.textContent = message;
   root.appendChild(node);
   setTimeout(() => node.remove(), 2800);
+}
+
+function confirmDelete(label) {
+  return window.confirm(`Delete ${label}? This cannot be undone.`);
 }
 
 function openStockModal() {
@@ -96,15 +101,28 @@ function rangeColor(index) {
   return colors[index % colors.length];
 }
 
+function normalizeSeedModel(seed) {
+  return {
+    id: seed.id || "",
+    name: seed.name || "",
+    iso: seed.iso,
+    size: seed.size || "135",
+    nominal_photo_count: seed.nominal_photo_count,
+    supported_processing: seed.supported_processing || [],
+  };
+}
+
 async function refreshAll() {
   const [models, cameras, stocks] = await Promise.all([
     api("/api/v1/film-models"),
     api("/api/v1/cameras"),
     api("/api/v1/film-stocks"),
   ]);
+  const seeds = await fetch("/seed-film-models.json").then((res) => res.ok ? res.json() : []).catch(() => []);
   state.models = models || [];
   state.cameras = cameras || [];
   state.stocks = stocks || [];
+  state.seedFilmModels = Array.isArray(seeds) ? seeds : [];
   renderCollections();
   syncEditors();
   syncStockTargets();
@@ -119,6 +137,26 @@ async function refreshAll() {
 }
 
 function renderCollections() {
+  const existingIds = new Set(state.models.map((m) => m.id));
+  const seeds = state.seedFilmModels
+    .map(normalizeSeedModel)
+    .filter((seed) => seed.id && !existingIds.has(seed.id));
+
+  state.seedFilmModels = seeds;
+  byId("seedFilmModels").innerHTML = state.seedFilmModels.map((m, index) => `
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">${m.name}</div>
+          <div class="card-sub">ISO ${m.iso} | ${m.size} | ${Array.isArray(m.supported_processing) ? m.supported_processing.join(", ") : ""}</div>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="secondary" data-seed-model="${index}">Add</button>
+        </div>
+      </div>
+    </article>
+  `).join("");
+
   byId("filmModels").innerHTML = state.models.map((m) => `
     <article class="card">
       <div class="card-head">
@@ -128,6 +166,7 @@ function renderCollections() {
         </div>
         <div class="card-actions">
           <button type="button" class="secondary" data-edit-model="${m.id}">Edit</button>
+          <button type="button" class="secondary" data-delete-model="${m.id}">Delete</button>
         </div>
       </div>
     </article>
@@ -142,13 +181,14 @@ function renderCollections() {
         </div>
         <div class="card-actions">
           <button type="button" class="secondary" data-edit-camera="${c.id}">Edit</button>
+          <button type="button" class="secondary" data-delete-camera="${c.id}">Delete</button>
         </div>
       </div>
     </article>
   `).join("");
 
   byId("stocks").innerHTML = state.stocks.map((s) => `
-    <article class="card">
+    <article class="card stock-card" data-open-stock="${s.id}">
       <div class="card-head">
         <div>
           <div class="card-title">${s.id}</div>
@@ -156,8 +196,8 @@ function renderCollections() {
           <div class="card-sub">${s.comment || ""}</div>
         </div>
         <div class="card-actions">
-          <button type="button" class="secondary" data-open-stock="${s.id}">Manage</button>
           <button type="button" class="secondary" data-edit-stock="${s.id}">Edit</button>
+          <button type="button" class="secondary" data-delete-stock="${s.id}">Delete</button>
         </div>
       </div>
     </article>
@@ -166,12 +206,50 @@ function renderCollections() {
   byId("filmModels").querySelectorAll("[data-edit-model]").forEach((btn) => {
     btn.onclick = () => loadModelEditor(btn.getAttribute("data-edit-model"));
   });
+  byId("filmModels").querySelectorAll("[data-delete-model]").forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute("data-delete-model");
+      if (!confirmDelete(`film model ${id}`)) return;
+      await api(`/api/v1/film-models/${encodeURIComponent(id)}`, { method: "DELETE" });
+      toast("Film model deleted");
+      await refreshAll();
+    };
+  });
+  byId("seedFilmModels").querySelectorAll("[data-seed-model]").forEach((btn) => {
+    btn.onclick = async () => {
+      const seed = state.seedFilmModels[Number(btn.getAttribute("data-seed-model"))];
+      if (!seed) return;
+      await api("/api/v1/film-models", {
+        method: "POST",
+        body: JSON.stringify({
+          id: seed.id,
+          name: seed.name,
+          iso: seed.iso,
+          size: seed.size,
+          nominal_photo_count: seed.nominal_photo_count,
+          supported_processing: seed.supported_processing || [],
+        }),
+      });
+      toast(`Added ${seed.name}`);
+      await refreshAll();
+    };
+  });
   byId("cameras").querySelectorAll("[data-edit-camera]").forEach((btn) => {
     btn.onclick = () => loadCameraEditor(btn.getAttribute("data-edit-camera"));
   });
-  byId("stocks").querySelectorAll("[data-open-stock]").forEach((btn) => {
+  byId("cameras").querySelectorAll("[data-delete-camera]").forEach((btn) => {
     btn.onclick = async () => {
-      state.activeStockId = btn.getAttribute("data-open-stock");
+      const id = btn.getAttribute("data-delete-camera");
+      if (!confirmDelete(`camera ${id}`)) return;
+      await api(`/api/v1/cameras/${encodeURIComponent(id)}`, { method: "DELETE" });
+      toast("Camera deleted");
+      await refreshAll();
+    };
+  });
+  byId("stocks").querySelectorAll("[data-open-stock]").forEach((card) => {
+    card.onclick = async (event) => {
+      if (event.target.closest("button")) return;
+      state.activeStockId = card.getAttribute("data-open-stock");
       setTab("stocks");
       await loadStockDetail(state.activeStockId);
       openStockModal();
@@ -183,6 +261,18 @@ function renderCollections() {
       setTab("stocks");
       loadStockEditor(state.stocks.find((s) => s.id === state.activeStockId));
       await loadStockDetail(state.activeStockId);
+    };
+  });
+  byId("stocks").querySelectorAll("[data-delete-stock]").forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute("data-delete-stock");
+      if (!confirmDelete(`stock ${id}`)) return;
+      await api(`/api/v1/film-stocks/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (state.activeStockId === id) {
+        state.activeStockId = "";
+      }
+      toast("Stock deleted");
+      await refreshAll();
     };
   });
 }
@@ -385,6 +475,7 @@ async function loadStockDetail(stockId) {
       <div class="card-actions">
         <span class="range-swatch" style="--range-color: ${rangeColor(index)}"></span>
         <button type="button" class="secondary" data-edit-range="${r.id}">Edit</button>
+        <button type="button" class="secondary" data-delete-range="${r.id}">Delete</button>
       </div>
     </div>
   `).join("");
@@ -395,6 +486,15 @@ async function loadStockDetail(stockId) {
     btn.onclick = () => {
       const range = ranges.find((r) => r.id === btn.getAttribute("data-edit-range"));
       if (range) loadRangeEditor(range);
+    };
+  });
+  byId("rangeList").querySelectorAll("[data-delete-range]").forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute("data-delete-range");
+      if (!confirmDelete(`range ${id}`)) return;
+      await api(`/api/v1/film-stocks/${stockId}/ranges/${encodeURIComponent(id)}`, { method: "DELETE" });
+      toast("Range deleted");
+      await loadStockDetail(stockId);
     };
   });
 
@@ -490,12 +590,13 @@ function renderImages(stockId, ranges, images) {
           <img src="${imageContentURL(img.id)}" alt="${img.original_name}" loading="lazy">
           ${assigned ? `<span class="image-range-badge">${assigned.range.start_frame}-${assigned.range.end_frame}</span>` : ""}
         </div>
-        <div class="image-caption">
-          <strong>${img.order_index}</strong>
-          <span>${img.original_name}</span>
-        </div>
+      <div class="image-caption">
+        <strong>${img.order_index}</strong>
+        <span>${img.original_name}</span>
+        <button type="button" class="secondary" data-delete-image="${img.id}">Delete</button>
       </div>
-    `;
+    </div>
+  `;
   }).join("");
 
   let draggedId = "";
@@ -548,6 +649,18 @@ function renderImages(stockId, ranges, images) {
       updateImageTileRange(tile, nextRangeId ? rangeMap.get(nextRangeId) : null);
       toast(nextRangeId ? "Range assigned" : "Range removed");
     });
+  });
+
+  root.querySelectorAll("[data-delete-image]").forEach((btn) => {
+    btn.onclick = async (event) => {
+      event.stopPropagation();
+      const id = btn.getAttribute("data-delete-image");
+      if (!confirmDelete(`image ${id}`)) return;
+      await api(`/api/v1/images/${encodeURIComponent(id)}`, { method: "DELETE" });
+      toast("Image deleted");
+      await loadStockDetail(stockId);
+      await refreshAll();
+    };
   });
 }
 

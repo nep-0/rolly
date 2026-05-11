@@ -237,8 +237,8 @@ Returns:
     {
       "image_id": "img-1",
       "source_path": "./uploads/stock-1/file1.jpg",
-      "output_path": "./exports/stock-1/stock-1-0000.jpg",
-      "output_name": "stock-1-0000.jpg",
+      "output_path": "./exports/stock-1/stock-1-0001-0001.jpg",
+      "output_name": "stock-1-0001-0001.jpg",
       "frame_number": 0
     }
   ]

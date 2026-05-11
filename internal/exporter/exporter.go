@@ -47,6 +47,9 @@ func Export(stock Source, exportDir string) (model.ExportResult, error) {
 		return stock.Images[i].OrderIndex < stock.Images[j].OrderIndex
 	})
 	takenTimes := deriveTakenTimes(stock, byRange)
+	frameNumbers := deriveFrameNumbers(stock, byRange)
+	rangeIndexes := deriveRangeIndexes(stock.Ranges)
+	exportIndexes := deriveExportIndexes(stock)
 	files := make([]model.ExportFile, 0, len(stock.Images))
 	for _, img := range stock.Images {
 		in, err := os.ReadFile(img.StoredPath)
@@ -54,10 +57,9 @@ func Export(stock Source, exportDir string) (model.ExportResult, error) {
 			return model.ExportResult{}, err
 		}
 		rangeMeta := ""
-		frameNumber := img.OrderIndex
+		frameNumber := frameNumbers[img.ID]
 		if img.RangeID != nil {
 			if r, ok := byRange[*img.RangeID]; ok {
-				frameNumber = r.StartFrame + img.OrderIndex
 				rangeMeta = fmt.Sprintf("frames %d-%d; ", r.StartFrame, r.EndFrame)
 				if r.Location != "" {
 					rangeMeta += "location=" + r.Location + "; "
@@ -71,7 +73,7 @@ func Export(stock Source, exportDir string) (model.ExportResult, error) {
 			}
 		}
 		outExt := outputExt(in, img.OriginalName)
-		outName := fmt.Sprintf("%s-%04d%s", sanitize(stock.Stock.ID), frameNumber, outExt)
+		outName := fmt.Sprintf("%s-%04d-%04d%s", sanitize(stock.Stock.ID), rangeIndexes[imageRangeID(img)], exportIndexes[img.ID], outExt)
 		outPath := filepath.Join(outDir, outName)
 		rendered, err := rewriteExif(in, stock, img, frameNumber, rangeMeta, takenTimes[img.ID])
 		if err != nil {
@@ -94,6 +96,83 @@ func Export(stock Source, exportDir string) (model.ExportResult, error) {
 		return model.ExportResult{}, err
 	}
 	return model.ExportResult{StockID: stock.Stock.ID, OutputDir: outDir, Manifest: manifest, Files: files}, nil
+}
+
+func imageRangeID(img model.Image) string {
+	if img.RangeID == nil {
+		return ""
+	}
+	return *img.RangeID
+}
+
+func deriveRangeIndexes(ranges []model.FrameRange) map[string]int {
+	ordered := append([]model.FrameRange(nil), ranges...)
+	sort.Slice(ordered, func(i, j int) bool {
+		if ordered[i].StartFrame == ordered[j].StartFrame {
+			return ordered[i].ID < ordered[j].ID
+		}
+		return ordered[i].StartFrame < ordered[j].StartFrame
+	})
+	out := map[string]int{"": 0}
+	for idx, r := range ordered {
+		out[r.ID] = idx + 1
+	}
+	return out
+}
+
+func deriveExportIndexes(stock Source) map[string]int {
+	out := make(map[string]int, len(stock.Images))
+	grouped := make(map[string][]model.Image)
+	for _, img := range stock.Images {
+		key := ""
+		if img.RangeID != nil {
+			key = *img.RangeID
+		}
+		grouped[key] = append(grouped[key], img)
+	}
+	for _, images := range grouped {
+		sort.Slice(images, func(i, j int) bool {
+			if images[i].OrderIndex == images[j].OrderIndex {
+				return images[i].CreatedAt.Before(images[j].CreatedAt)
+			}
+			return images[i].OrderIndex < images[j].OrderIndex
+		})
+		for idx, img := range images {
+			out[img.ID] = idx + 1
+		}
+	}
+	return out
+}
+
+func deriveFrameNumbers(stock Source, byRange map[string]model.FrameRange) map[string]int {
+	out := make(map[string]int, len(stock.Images))
+	grouped := make(map[string][]model.Image)
+	for _, img := range stock.Images {
+		out[img.ID] = img.OrderIndex
+		if img.RangeID != nil {
+			grouped[*img.RangeID] = append(grouped[*img.RangeID], img)
+		}
+	}
+	for rangeID, images := range grouped {
+		r, ok := byRange[rangeID]
+		if !ok {
+			continue
+		}
+		sort.Slice(images, func(i, j int) bool {
+			if images[i].OrderIndex == images[j].OrderIndex {
+				return images[i].CreatedAt.Before(images[j].CreatedAt)
+			}
+			return images[i].OrderIndex < images[j].OrderIndex
+		})
+		for idx, img := range images {
+			frameNumber := r.StartFrame + idx
+			if frameNumber > r.EndFrame {
+				frameNumber = r.EndFrame
+			}
+			out[img.ID] = frameNumber
+		}
+	}
+	return out
 }
 
 func rewriteExif(input []byte, stock Source, img model.Image, frameNumber int, rangeMeta string, takenAt time.Time) ([]byte, error) {
