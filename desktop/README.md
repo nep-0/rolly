@@ -29,6 +29,14 @@ The app stores SQLite, uploads, and exports under Electron user data:
 
 Electron also launches the backend with its working directory set to `rolly-data` and passes the same paths through both CLI flags and `ROLLY_*` environment variables. This avoids accidentally using `./rolly.db` from the project folder.
 
+## Change app data directory
+
+Use the application menu:
+
+- `Rolly` -> `Set App Data Directory...`
+
+The backend restarts after the directory changes. The selected path is saved in Electron user data for later launches.
+
 ## Local test
 
 ```powershell

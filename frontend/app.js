@@ -152,7 +152,7 @@ function renderCollections() {
       <div class="card-head">
         <div>
           <div class="card-title">${s.id}</div>
-          <div class="card-sub">${s.model_id} | ${s.camera_id} | ${s.expiry_year}-${String(s.expiry_month).padStart(2, "0")}</div>
+          <div class="card-sub">${(state.models.find((m) => m.id === s.model_id) || {}).name || s.model_id} | ${(state.cameras.find((c) => c.id === s.camera_id) || {}).name || s.camera_id} | ${s.expiry_year}-${String(s.expiry_month).padStart(2, "0")}</div>
           <div class="card-sub">${s.comment || ""}</div>
         </div>
         <div class="card-actions">

@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, Menu, dialog, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const net = require("net");
@@ -6,9 +6,29 @@ const path = require("path");
 
 let backend = null;
 let window = null;
+let backendUrl = null;
+let quitting = false;
+
+function configPath() {
+  return path.join(app.getPath("userData"), "config.json");
+}
+
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(configPath(), "utf8"));
+  } catch (err) {
+    return {};
+  }
+}
+
+function writeConfig(config) {
+  fs.mkdirSync(app.getPath("userData"), { recursive: true });
+  fs.writeFileSync(configPath(), JSON.stringify(config, null, 2));
+}
 
 function appDataDir() {
-  return path.join(app.getPath("userData"), "rolly-data");
+  if (process.env.ROLLY_APP_DATA_DIR) return process.env.ROLLY_APP_DATA_DIR;
+  return readConfig().dataDir || path.join(app.getPath("userData"), "rolly-data");
 }
 
 function backendPath() {
@@ -101,7 +121,77 @@ async function startBackend() {
   });
 
   await waitForHealth(`${url}healthz`);
+  backendUrl = url;
   return url;
+}
+
+function stopBackend() {
+  return new Promise((resolve) => {
+    if (!backend || backend.killed) {
+      resolve();
+      return;
+    }
+    const child = backend;
+    const done = () => resolve();
+    child.once("exit", done);
+    child.kill();
+    setTimeout(done, 3000);
+  });
+}
+
+async function restartBackend() {
+  await stopBackend();
+  const url = await startBackend();
+  if (window) {
+    await window.loadURL(url);
+  }
+}
+
+async function chooseAppDataDir() {
+  const result = await dialog.showOpenDialog(window, {
+    title: "Choose Rolly app data directory",
+    defaultPath: appDataDir(),
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return;
+
+  const dataDir = result.filePaths[0];
+  writeConfig({ ...readConfig(), dataDir });
+  await restartBackend();
+}
+
+async function openAppDataDir() {
+  await shell.openPath(appDataDir());
+}
+
+function createMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: "Rolly",
+      submenu: [
+        {
+          label: "Set App Data Directory...",
+          click: () => {
+            chooseAppDataDir().catch((err) => {
+              console.error(err);
+              dialog.showErrorBox("Could not change app data directory", err.message);
+            });
+          },
+        },
+        {
+          label: "Open App Data Directory",
+          click: () => {
+            openAppDataDir().catch((err) => {
+              console.error(err);
+              dialog.showErrorBox("Could not open app data directory", err.message);
+            });
+          },
+        },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    },
+  ]));
 }
 
 async function createWindow(url) {
@@ -119,12 +209,14 @@ async function createWindow(url) {
 }
 
 app.on("before-quit", () => {
+  quitting = true;
   if (backend && !backend.killed) {
     backend.kill();
   }
 });
 
 app.whenReady().then(async () => {
+  createMenu();
   const url = await startBackend();
   await createWindow(url);
 });
